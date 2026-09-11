@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.MessageMapper">
+
+    <!-- 站内消息表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.Message">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="type" property="type"/>
+        <result column="is_read" property="isRead"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, user_id, title, content, type, is_read, create_time, update_time, deleted
+    </sql>
+
+    <!-- 发送消息：初始未读（is_read=0），主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.Message" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO message (user_id, title, content, type, is_read)
+        VALUES (#{userId}, #{title}, #{content}, #{type}, 0)
+    </insert>
+
+    <!-- 会员端：我的消息列表（type 为空查全部，按时间倒序，分页由 PageHelper 处理） -->
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM message
+        WHERE user_id = #{userId} AND deleted = 0
+        <if test="type != null and type != ''">
+            AND type = #{type}
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 按主键查询消息（消息详情页） -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM message
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 更新已读状态：0 未读/1 已读 -->
+    <update id="updateIsRead">
+        UPDATE message SET is_read = #{isRead}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 未读消息数量统计（会员端角标） -->
+    <select id="countUnread" resultType="long">
+        SELECT COUNT(*)
+        FROM message
+        WHERE user_id = #{userId} AND is_read = 0 AND deleted = 0
+    </select>
+
+    <!-- 管理端：全站消息列表（type 为空查全部，分页由 PageHelper 处理） -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM message
+        WHERE deleted = 0
+        <if test="type != null and type != ''">
+            AND type = #{type}
+        </if>
+        ORDER BY id DESC
+    </select>
+
+</mapper>

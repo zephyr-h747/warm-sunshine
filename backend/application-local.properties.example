@@ -1,0 +1,6 @@
+# Copy to application-local.properties inside backend; never commit that file.
+DB_PASSWORD=replace-with-your-database-password
+DEEPSEEK_API_KEY=replace-with-your-api-key
+JWT_SECRET=replace-with-a-random-secret-at-least-32-bytes-long
+REDIS_PASSWORD=
+ADMIN_RESET_PASSWORD=replace-with-your-reset-password

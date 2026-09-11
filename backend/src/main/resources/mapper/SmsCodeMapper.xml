@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.SmsCodeMapper">
+
+    <!-- 短信验证码表字段映射（used 字段等价逻辑删除，过期记录定时物理清理） -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.SmsCode">
+        <id column="id" property="id"/>
+        <result column="phone" property="phone"/>
+        <result column="code" property="code"/>
+        <result column="expire_time" property="expireTime"/>
+        <result column="used" property="used"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 保存验证码：初始未使用（used=0） -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.SmsCode" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sms_code (phone, code, expire_time, used)
+        VALUES (#{phone}, #{code}, #{expireTime}, 0)
+    </insert>
+
+    <!-- 查询某手机号最新一条未使用的验证码（注册/找回密码时校验） -->
+    <select id="selectLatestByPhone" resultMap="BaseResultMap">
+        SELECT id, phone, code, expire_time, used, create_time
+        FROM sms_code
+        WHERE phone = #{phone} AND used = 0
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+    <!-- 标记验证码已使用（验证通过后置 used=1，防止重复使用） -->
+    <update id="updateUsed">
+        UPDATE sms_code SET used = 1 WHERE id = #{id}
+    </update>
+
+    <!-- 定时任务：物理删除已过期的验证码记录 -->
+    <delete id="deleteExpired">
+        DELETE FROM sms_code WHERE expire_time &lt; NOW()
+    </delete>
+
+</mapper>

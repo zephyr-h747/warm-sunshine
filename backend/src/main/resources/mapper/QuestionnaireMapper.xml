@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.QuestionnaireMapper">
+
+    <!-- 问卷表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.Questionnaire">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="status" property="status"/><result column="total_score" property="totalScore"/><result column="pass_score" property="passScore"/><result column="grade_rules" property="gradeRules"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, title, description, status, total_score, pass_score, grade_rules, create_time, update_time, deleted
+    </sql>
+
+    <!-- 会员端：已发布问卷列表（只展示 PUBLISHED，分页由 PageHelper 处理） -->
+    <select id="selectPublishedList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM questionnaire
+        WHERE status = 'PUBLISHED' AND deleted = 0
+        ORDER BY id DESC
+    </select>
+
+    <!-- 按主键查询问卷 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM questionnaire
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 管理端：全部问卷列表（含草稿，分页由 PageHelper 处理） -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM questionnaire
+        WHERE deleted = 0
+        ORDER BY id DESC
+    </select>
+
+    <!-- 新建问卷：初始状态 DRAFT 草稿，主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.Questionnaire" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO questionnaire (title, description, status, total_score, pass_score, grade_rules)
+        VALUES (#{title}, #{description}, 'DRAFT', #{totalScore}, #{passScore}, #{gradeRules})
+    </insert>
+
+    <!-- 更新问卷：仅更新标题与描述（管理端编辑） -->
+    <update id="update" parameterType="com.eldercare.core.entity.Questionnaire">
+        UPDATE questionnaire
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="totalScore != null">total_score = #{totalScore},</if><if test="passScore != null">pass_score = #{passScore},</if><if test="gradeRules != null">grade_rules = #{gradeRules},</if>
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 更新发布状态：DRAFT 草稿/PUBLISHED 已发布（管理端发布/下架） -->
+    <update id="updateStatus">
+        UPDATE questionnaire SET status = #{status}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 逻辑删除问卷（管理端） -->
+    <update id="delete">
+        UPDATE questionnaire SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>

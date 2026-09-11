@@ -1,0 +1,260 @@
+cd/* ============ 智慧养老社区 · 管理端设计系统 ============ */
+
+/* ---- 设计令牌 & Element Plus 主题覆盖 ---- */
+:root {
+  /* 品牌色：翡翠绿（与会员端一致） */
+  --el-color-primary: #0e9f78;
+  --el-color-primary-light-3: #4dbd99;
+  --el-color-primary-light-5: #86d4b8;
+  --el-color-primary-light-7: #bcead9;
+  --el-color-primary-light-8: #d7f3e8;
+  --el-color-primary-light-9: #ebf9f3;
+  --el-color-primary-dark-2: #0b7a5e;
+
+  /* 圆角体系 */
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 999px;
+
+  /* 品牌语义色 */
+  --brand: #0e9f78;
+  --brand-2: #13c291;
+  --brand-grad: linear-gradient(135deg, #0e9f78, #13c291);
+  --ink: #1c2b3a;
+  --ink-2: #4a5a6b;
+  --muted: #8d9aa9;
+  --line: #e8eef4;
+  --card-shadow: 0 1px 3px rgba(28, 43, 58, 0.04), 0 8px 24px rgba(28, 43, 58, 0.05);
+  --card-shadow-hover: 0 4px 10px rgba(28, 43, 58, 0.06), 0 16px 36px rgba(28, 43, 58, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  background-color: #f3f6fa;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- 滚动条 ---- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cfdae5;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b3c3d2;
+}
+
+/* ---- 页面容器与入场动画 ---- */
+.page {
+  padding: 18px;
+  animation: page-in 0.45s cubic-bezier(0.22, 0.85, 0.32, 1) both;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- 页面标题头（各列表页通用） ---- */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 20px 22px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  box-shadow: var(--card-shadow);
+}
+
+.ph-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  font-size: 22px;
+  color: #fff;
+  border-radius: 14px;
+  background: var(--brand-grad);
+  box-shadow: 0 8px 18px rgba(14, 159, 120, 0.32);
+  flex-shrink: 0;
+}
+
+.ph-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.ph-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.ph-desc {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* ---- 搜索/工具栏 ---- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 14px 18px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  box-shadow: var(--card-shadow);
+}
+
+/* ---- 表格卡片 ---- */
+.table-card {
+  padding: 18px 20px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  box-shadow: var(--card-shadow);
+}
+
+.section {
+  margin-top: 16px;
+}
+
+/* ---- 表格美化 ---- */
+.el-table {
+  --el-table-header-bg-color: #f4f8fb;
+  --el-table-header-text-color: var(--ink-2);
+  --el-table-row-hover-bg-color: #effaf5;
+  --el-table-border-color: #eef2f7;
+  /* 行背景必须不透明：固定列（fixed 列）单元格为 background:inherit，
+     若设为 transparent，横向滚动时其他列内容会透过固定操作列显示出来 */
+  --el-table-tr-bg-color: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.el-table .el-table__cell {
+  padding: 11px 0;
+}
+
+/* ---- 卡片标题 ---- */
+.section-title {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--brand-grad);
+}
+
+/* ---- 分页 ---- */
+.pager {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* ---- 对话框 ---- */
+.el-dialog {
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.el-dialog__header {
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--line);
+  margin-right: 0;
+}
+
+.el-dialog__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.el-dialog__body {
+  padding: 22px 24px;
+}
+
+.el-dialog__footer {
+  padding: 14px 24px 20px;
+  border-top: 1px solid var(--line);
+}
+
+/* ---- 标签圆角 ---- */
+.el-tag {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* ---- 下拉/弹层圆角 ---- */
+.el-select__popper.el-popper,
+.el-picker__popper.el-popper {
+  border-radius: 12px;
+}
+
+.el-select-dropdown__item.is-selected {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+/* ---- 表单提示 ---- */
+.form-tip {
+  width: 100%;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* ---- 统计卡片（兼容旧用法） ---- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}

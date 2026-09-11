@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.eldercare.core.mapper.PointTransactionMapper">
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.PointTransaction">
+        <id column="id" property="id"/><result column="user_id" property="userId"/>
+        <result column="transaction_type" property="transactionType"/><result column="amount" property="amount"/><result column="balance_after" property="balanceAfter"/>
+        <result column="remain_amount" property="remainAmount"/><result column="source_type" property="sourceType"/>
+        <result column="batch_tx_id" property="batchTxId"/><result column="source_id" property="sourceId"/><result column="remark" property="remark"/>
+        <result column="expire_time" property="expireTime"/><result column="create_time" property="createTime"/><result column="deleted" property="deleted"/>
+    </resultMap>
+    <sql id="columns">id,user_id,transaction_type,amount,balance_after,remain_amount,batch_tx_id,source_type,source_id,remark,expire_time,create_time,deleted</sql>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO point_transaction(user_id,transaction_type,amount,balance_after,remain_amount,batch_tx_id,source_type,source_id,remark,expire_time,deleted)
+        VALUES(#{userId},#{transactionType},#{amount},#{balanceAfter},#{remainAmount},#{batchTxId},#{sourceType},#{sourceId},#{remark},#{expireTime},0)
+    </insert>
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="columns"/> FROM point_transaction WHERE user_id=#{userId} AND deleted=0
+        <if test="type != null and type != ''">AND transaction_type=#{type}</if> ORDER BY CASE WHEN transaction_type='EARN' THEN expire_time END ASC, create_time ASC
+    </select>
+    <select id="selectExpirable" resultMap="BaseResultMap">
+        SELECT <include refid="columns"/> FROM point_transaction WHERE remain_amount&gt;0 AND deleted=0 AND expire_time IS NOT NULL AND expire_time&lt;=#{now} ORDER BY user_id,expire_time,id
+    </select>
+    <update id="reduceRemain">UPDATE point_transaction SET remain_amount=remain_amount-#{amount} WHERE id=#{id} AND remain_amount &gt;= #{amount}</update>
+    <update id="expire">UPDATE point_transaction SET remain_amount=0 WHERE id=#{id} AND remain_amount&gt;0</update>
+    <select id="selectActiveConsumptions" resultMap="BaseResultMap">
+        SELECT <include refid="columns"/> FROM point_transaction WHERE user_id=#{userId} AND source_type=#{sourceType} AND source_id=#{sourceId} AND transaction_type='CONSUME' AND deleted=0
+    </select>
+    <update id="restoreRemain">UPDATE point_transaction SET remain_amount=remain_amount+#{amount} WHERE id=#{id} AND deleted=0</update>
+    <update id="logicDelete">UPDATE point_transaction SET deleted=1 WHERE id=#{id} AND deleted=0</update>
+</mapper>

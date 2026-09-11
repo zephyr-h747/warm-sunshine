@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.AppointmentPackageMapper">
+
+    <!-- 体检套餐表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.AppointmentPackage">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="cover_url" property="coverUrl"/>
+        <result column="description" property="description"/>
+        <result column="price" property="price"/>
+        <result column="suitable_people" property="suitablePeople"/>
+        <result column="items" property="items"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, name, cover_url, description, price, suitable_people, items, status, create_time, update_time, deleted
+    </sql>
+
+    <!-- 会员端：已启用套餐列表（只展示 ENABLED） -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointment_package
+        WHERE status = 'ENABLED' AND deleted = 0
+        ORDER BY id DESC
+    </select>
+
+    <!-- 按主键查询套餐 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointment_package
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 管理端：全部套餐列表（含禁用，分页由 PageHelper 处理） -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointment_package
+        WHERE deleted = 0
+        ORDER BY id DESC
+    </select>
+
+    <!-- 新增套餐（管理端），主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.AppointmentPackage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO appointment_package (name, cover_url, description, price, suitable_people, items, status)
+        VALUES (#{name}, #{coverUrl}, #{description}, #{price}, #{suitablePeople}, #{items}, #{status})
+    </insert>
+
+    <!-- 更新套餐：仅更新传入的非空字段（管理端编辑） -->
+    <update id="update" parameterType="com.eldercare.core.entity.AppointmentPackage">
+        UPDATE appointment_package
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="coverUrl != null">cover_url = #{coverUrl},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="suitablePeople != null">suitable_people = #{suitablePeople},</if>
+            <if test="items != null">items = #{items},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 逻辑删除套餐（管理端） -->
+    <update id="delete">
+        UPDATE appointment_package SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>

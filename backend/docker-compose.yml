@@ -1,0 +1,51 @@
+# ============================================================
+# AI 智能养老社区管理系统 - 基础设施容器（仅供 P10 容器化部署）
+# 本地开发请勿启动此文件：
+#   - MySQL 使用 WSL 直装版 8.0.46（localhost:3306 自动转发）
+#   - Redis 使用 Windows 本地版 8.8.0
+# ============================================================
+
+services:
+  mysql:
+    image: mysql:9.7.2
+    container_name: eldercare-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD before starting MySQL}
+      MYSQL_DATABASE: eldercare
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend/sql:/docker-entrypoint-initdb.d:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+08:00
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD:?Set DB_PASSWORD before starting MySQL}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  redis:
+    image: redis:8.8.0
+    container_name: eldercare-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql-data:
+  redis-data:
+

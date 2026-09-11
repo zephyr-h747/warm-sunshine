@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.HealthRecordMapper">
+
+    <!-- 健康记录表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.HealthRecord">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="systolic" property="systolic"/>
+        <result column="diastolic" property="diastolic"/>
+        <result column="blood_sugar" property="bloodSugar"/>
+        <result column="heart_rate" property="heartRate"/>
+        <result column="weight" property="weight"/>
+        <result column="bmi" property="bmi"/>
+        <result column="memo" property="memo"/>
+        <result column="recorded_at" property="recordedAt"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, user_id, systolic, diastolic, blood_sugar, heart_rate, weight, bmi, memo,
+        recorded_at, create_time, update_time, deleted
+    </sql>
+
+    <!-- 保存健康记录（含 BMI 计算结果与记录时间），主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.HealthRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO health_record (user_id, systolic, diastolic, blood_sugar, heart_rate, weight, bmi, memo, recorded_at)
+        VALUES (#{userId}, #{systolic}, #{diastolic}, #{bloodSugar}, #{heartRate}, #{weight}, #{bmi}, #{memo}, #{recordedAt})
+    </insert>
+
+    <!-- 按主键查询健康记录 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM health_record
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 会员端：我的健康记录列表（按记录时间倒序，分页由 PageHelper 处理） -->
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM health_record
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY recorded_at DESC
+    </select>
+
+    <!-- 最近 6 个月健康记录（按记录时间升序，供趋势分析使用） -->
+    <select id="selectRecent6Months" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM health_record
+        WHERE user_id = #{userId} AND deleted = 0
+          AND recorded_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+        ORDER BY recorded_at ASC
+    </select>
+
+    <!-- 定时任务：统计时间区间内健康录入汇总（记录数及各指标均值），用于每日健康报告 -->
+    <select id="selectDailySummary" resultType="com.eldercare.core.vo.DailyHealthStatVO">
+        SELECT COUNT(*) AS record_count,
+               AVG(systolic) AS avg_systolic,
+               AVG(diastolic) AS avg_diastolic,
+               AVG(blood_sugar) AS avg_blood_sugar,
+               AVG(heart_rate) AS avg_heart_rate
+        FROM health_record
+        WHERE deleted = 0 AND recorded_at &gt;= #{start} AND recorded_at &lt; #{end}
+    </select>
+
+</mapper>

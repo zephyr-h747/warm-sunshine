@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.AppointmentMapper">
+
+    <!-- 预约表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.Appointment">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="slot_id" property="slotId"/>
+        <result column="package_id" property="packageId"/>
+        <result column="status" property="status"/>
+        <result column="report_url" property="reportUrl"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, user_id, slot_id, package_id, status, report_url, create_time, update_time, deleted
+    </sql>
+
+    <!-- 创建预约：初始状态 PENDING 待确认，主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.Appointment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO appointment (user_id, slot_id, package_id, status)
+        VALUES (#{userId}, #{slotId}, #{packageId}, 'PENDING')
+    </insert>
+
+    <!-- 按主键查询预约 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointment
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 会员端：我的预约列表（按创建时间倒序，分页由 PageHelper 处理） -->
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointment
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY id DESC
+    </select>
+
+    <!-- 更新预约状态：PENDING/CONFIRMED/CANCELED/COMPLETED（用户取消、管理端确认/完成） -->
+    <update id="updateStatus">
+        UPDATE appointment SET status = #{status}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 上传体检报告后回填报告 URL（管理端） -->
+    <update id="updateReportUrl">
+        UPDATE appointment SET report_url = #{reportUrl}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 管理端：按状态和创建日期区间筛选预约（分页由 PageHelper 处理） -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointment
+        WHERE deleted = 0
+        <if test="status != null and status != ''">AND status = #{status}</if>
+        <if test="start != null">AND DATE(create_time) &gt;= #{start}</if>
+        <if test="end != null">AND DATE(create_time) &lt;= #{end}</if>
+        ORDER BY id DESC
+    </select>
+
+    <!-- 今日新增预约数统计（仪表盘使用） -->
+    <select id="countToday" resultType="long">
+        SELECT COUNT(*) FROM appointment
+        WHERE deleted = 0 AND DATE(create_time) = CURDATE()
+    </select>
+
+    <!-- 待确认预约数统计：仅 PENDING（仪表盘"待确认预约"卡片，确认后数量应减少） -->
+    <select id="countPending" resultType="long">
+        SELECT COUNT(*) FROM appointment
+        WHERE deleted = 0 AND status = 'PENDING'
+    </select>
+
+    <!-- 定时任务：逻辑删除已完成且创建时间早于 cutoff 的历史预约 -->
+    <update id="archiveExpired">
+        UPDATE appointment
+        SET deleted = 1
+        WHERE deleted = 0 AND status = 'COMPLETED' AND create_time &lt; #{cutoff}
+    </update>
+
+    <!-- 定时任务：查询某日待完成的预约（联表带出用户手机号、套餐名、时段），用于发送短信提醒 -->
+    <select id="selectPendingForDate" resultType="com.eldercare.core.vo.AppointmentReminderVO">
+        SELECT a.id AS appointment_id, a.user_id AS user_id,
+               u.phone AS phone, p.name AS package_name,
+               s.appoint_date AS appoint_date, s.time_range AS time_range
+        FROM appointment a
+        JOIN appointment_slot s ON a.slot_id = s.id AND s.deleted = 0
+        JOIN appointment_package p ON a.package_id = p.id AND p.deleted = 0
+        JOIN `user` u ON a.user_id = u.id AND u.deleted = 0
+        WHERE a.deleted = 0
+          AND a.status IN ('PENDING', 'CONFIRMED')
+          AND s.appoint_date = #{date}
+    </select>
+
+</mapper>

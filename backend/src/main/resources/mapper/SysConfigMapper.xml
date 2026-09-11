@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.SysConfigMapper">
+
+    <!-- 系统配置表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.SysConfig">
+        <id column="id" property="id"/>
+        <result column="config_key" property="configKey"/>
+        <result column="config_value" property="configValue"/>
+        <result column="description" property="description"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, config_key, config_value, description, create_time, update_time, deleted
+    </sql>
+
+    <!-- 查询全部配置项（管理端配置页展示） -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_config
+        WHERE deleted = 0
+        ORDER BY id ASC
+    </select>
+
+    <!-- 按配置键查询配置值（读取运行时配置） -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_config
+        WHERE config_key = #{configKey} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 按配置键更新配置值（管理端修改配置） -->
+    <update id="updateByKey">
+        UPDATE sys_config
+        SET config_value = #{configValue}
+        WHERE config_key = #{configKey} AND deleted = 0
+    </update>
+
+</mapper>

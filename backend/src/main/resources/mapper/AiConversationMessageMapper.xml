@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端对话 + 定时清理），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.AiConversationMessageMapper">
+
+    <!-- 对话消息表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.AiConversationMessage">
+        <id column="id" property="id"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="user_id" property="userId"/>
+        <result column="role" property="role"/>
+        <result column="message" property="message"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, session_id, user_id, role, message, create_time, update_time, deleted
+    </sql>
+
+    <!-- 新增对话消息：create_time/update_time/deleted 由数据库默认值填充，主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.AiConversationMessage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ai_conversation_message (session_id, user_id, role, message)
+        VALUES (#{sessionId}, #{userId}, #{role}, #{message})
+    </insert>
+
+    <!-- 会话消息历史（按时间升序，分页由 PageHelper 处理） -->
+    <select id="selectBySessionId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ai_conversation_message
+        WHERE session_id = #{sessionId} AND deleted = 0
+        ORDER BY id ASC
+    </select>
+
+    <!-- 最近 10 轮对话：先取最新 20 条（10 轮 = 用户 + 助手各 10 条），再按时间升序返回作为上下文 -->
+    <select id="selectRecent10Messages" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM (
+            SELECT <include refid="Base_Column_List"/>
+            FROM ai_conversation_message
+            WHERE session_id = #{sessionId} AND deleted = 0
+            ORDER BY id DESC
+            LIMIT 20
+        ) recent
+        ORDER BY id ASC
+    </select>
+
+    <!-- 删除会话：逻辑删除该会话全部消息 -->
+    <update id="logicDeleteBySessionId">
+        UPDATE ai_conversation_message SET deleted = 1
+        WHERE session_id = #{sessionId} AND deleted = 0
+    </update>
+
+    <!-- 定时任务：逻辑删除创建时间早于 cutoff 的历史对话消息 -->
+    <update id="logicDeleteExpired">
+        UPDATE ai_conversation_message
+        SET deleted = 1
+        WHERE deleted = 0 AND create_time &lt; #{cutoff}
+    </update>
+
+</mapper>

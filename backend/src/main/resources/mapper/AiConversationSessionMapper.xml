@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 用户端 AI 会话 Mapper，SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.AiConversationSessionMapper">
+
+    <!-- 会话实体字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.AiConversationSession">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="session_name" property="sessionName"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 会话列表行：含最后一条消息预览（关联子查询取该会话最新一条消息） -->
+    <resultMap id="SessionVOResultMap" type="com.eldercare.core.vo.SessionVO">
+        <id column="id" property="id"/>
+        <result column="session_name" property="sessionName"/>
+        <result column="create_time" property="createTime"/>
+        <result column="last_message" property="lastMessage"/>
+    </resultMap>
+
+    <!-- 新建会话：create_time/update_time/deleted 由数据库默认值填充，主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.AiConversationSession" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ai_conversation_session (user_id, session_name)
+        VALUES (#{userId}, #{sessionName})
+    </insert>
+
+    <!-- 会员端：我的会话列表 + 最后一条消息预览（按创建时间倒序，分页由 PageHelper 处理） -->
+    <select id="selectByUserId" resultMap="SessionVOResultMap">
+        SELECT s.id, s.session_name, s.create_time,
+               (SELECT m.message
+                FROM ai_conversation_message m
+                WHERE m.session_id = s.id AND m.deleted = 0
+                ORDER BY m.id DESC
+                LIMIT 1) AS last_message
+        FROM ai_conversation_session s
+        WHERE s.user_id = #{userId} AND s.deleted = 0
+        ORDER BY s.create_time DESC
+    </select>
+
+    <!-- 按主键查询会话 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT id, user_id, session_name, create_time, update_time, deleted
+        FROM ai_conversation_session
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 逻辑删除会话（删除会话时由 Service 联动逻辑删除其消息） -->
+    <update id="deleteById">
+        UPDATE ai_conversation_session SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>

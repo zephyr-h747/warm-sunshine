@@ -1,0 +1,113 @@
+server:
+  port: 8080
+
+spring:
+  config:
+    import: optional:file:./application-local.properties
+  application:
+    name: eldercare
+
+  # MySQL 9.7.2（Windows 服务 MySQL97，localhost:3306）
+  datasource:
+    url: jdbc:mysql://localhost:3306/eldercare?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 16
+      minimum-idle: 4
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # Redis 8.8.0（Windows 本地版，localhost:6379）
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+
+  # Spring AI 2.0.0 + DeepSeek（OpenAI 兼容接口）
+  ai:
+    openai:
+      api-key: ${DEEPSEEK_API_KEY}
+      base-url: https://api.deepseek.com
+      chat:
+        completions-path: /chat/completions
+        options:
+          model: deepseek-flash
+          temperature: 0.4
+
+  # 文件上传（体检报告 PDF，上限 20MB）
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+    encoding:
+      enabled: true
+      charset: UTF-8
+      force: true
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.eldercare.core.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    lazy-loading-enabled: true
+
+# PageHelper 分页插件
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql
+
+# JWT 配置
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expire: 7200        # 2 小时，单位秒
+  refresh-token-expire: 604800     # 7 天，单位秒
+
+# 业务配置
+eldercare:
+  upload:
+    path: ${UPLOAD_PATH:./data/upload}   # 文件上传根目录
+  sms:
+    enabled: ${SMS_ENABLED:false}        # 短信服务开关，默认 Mock 打日志
+
+# Actuator 健康检查
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    # Redis 8.8.0（RedisWin）的 INFO 响应格式导致响应式健康检查解析失败，关闭 Redis 健康指示器（业务连接不受影响）
+    redis:
+      enabled: false
+
+logging:
+  level:
+    com.eldercare: INFO
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+
+

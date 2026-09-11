@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="AI 智能养老社区 - 会员端" />
+    <title>智慧养老社区</title>
+    <script>
+      // rem 适配（375 设计稿，rootValue 37.5）：根字号 = 画布宽度 / 10；
+      // 宽屏（PC）画布封顶 480px，超出部分不再放大，页面以居中"手机画布"呈现
+      (function () {
+        var CANVAS_MAX = 480
+        function fit() {
+          var w = document.documentElement.clientWidth || 375
+          document.documentElement.style.fontSize = Math.min(w, CANVAS_MAX) / 10 + 'px'
+        }
+        fit()
+        window.addEventListener('resize', fit)
+        window.addEventListener('orientationchange', fit)
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app" class="ignore-app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

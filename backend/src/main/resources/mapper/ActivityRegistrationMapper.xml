@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.ActivityRegistrationMapper">
+
+    <!-- 活动报名表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.ActivityRegistration">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="activity_id" property="activityId"/>
+        <result column="check_in_status" property="checkInStatus"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, user_id, activity_id, check_in_status, create_time, update_time, deleted
+    </sql>
+
+    <!-- 活动报名：初始签到状态 NOT_CHECKED_IN 未签到，主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.ActivityRegistration" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO activity_registration (user_id, activity_id, check_in_status)
+        VALUES (#{userId}, #{activityId}, 'NOT_CHECKED_IN')
+    </insert>
+
+    <!-- 查重：判断某用户是否已报名某活动（防止重复报名） -->
+    <select id="selectByUserAndActivity" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity_registration
+        WHERE user_id = #{userId} AND activity_id = #{activityId} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 会员端：我的报名列表（按报名时间倒序，分页由 PageHelper 处理） -->
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity_registration
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 按主键查询报名记录 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity_registration
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 更新签到状态：NOT_CHECKED_IN 未签到/CHECKED_IN 已签到（管理端活动签到） -->
+    <update id="updateCheckInStatus">
+        UPDATE activity_registration
+        SET check_in_status = #{checkInStatus}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 管理端：某活动的报名列表（分页由 PageHelper 处理） -->
+    <select id="selectByActivityId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM activity_registration
+        WHERE activity_id = #{activityId} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 今日活动报名数统计（仪表盘使用） -->
+    <select id="countToday" resultType="long">
+        SELECT COUNT(*) FROM activity_registration
+        WHERE deleted = 0 AND DATE(create_time) = CURDATE()
+    </select>
+
+    <select id="selectTomorrowReminders" resultType="com.eldercare.core.vo.ActivityReminderVO">
+        SELECT a.id activity_id, r.user_id, u.phone, a.title, a.activity_start
+        FROM activity_registration r JOIN community_activity a ON a.id=r.activity_id
+        JOIN `user` u ON u.id=r.user_id
+        WHERE r.deleted=0 AND a.deleted=0 AND a.activity_start &gt;= #{start} AND a.activity_start &lt; #{end}
+    </select>
+
+</mapper>

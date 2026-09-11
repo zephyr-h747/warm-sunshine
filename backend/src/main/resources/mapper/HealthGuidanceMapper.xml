@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.HealthGuidanceMapper">
+
+    <!-- 健康指导表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.HealthGuidance">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="type" property="type"/>
+        <result column="content" property="content"/>
+        <result column="is_read" property="isRead"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 写入健康指导：初始未读（is_read=0） -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.HealthGuidance" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO health_guidance (user_id, type, content, is_read)
+        VALUES (#{userId}, #{type}, #{content}, 0)
+    </insert>
+
+    <!-- 查询某用户当天（create_time 不早于今日 0 点）指定类型的指导，用于定时任务当日推送去重 -->
+    <select id="selectTodayByUserAndType" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM health_guidance
+        WHERE user_id = #{userId} AND type = #{type} AND deleted = 0
+          AND create_time >= CURDATE()
+        ORDER BY id ASC
+    </select>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, user_id, type, content, is_read, create_time, update_time, deleted
+    </sql>
+
+</mapper>

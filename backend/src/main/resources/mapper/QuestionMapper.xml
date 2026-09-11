@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.QuestionMapper">
+
+    <!-- 问卷题目表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.Question">
+        <id column="id" property="id"/>
+        <result column="questionnaire_id" property="questionnaireId"/>
+        <result column="content" property="content"/>
+        <result column="type" property="type"/>
+        <result column="options" property="options"/><result column="score_mode" property="scoreMode"/><result column="max_score" property="maxScore"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, questionnaire_id, content, type, options, score_mode, max_score, sort_order, create_time, update_time, deleted
+    </sql>
+
+    <!-- 按问卷查询题目列表（按 sort_order 升序，答题页展示顺序） -->
+    <select id="selectByQuestionnaireId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM question
+        WHERE questionnaire_id = #{questionnaireId} AND deleted = 0
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <!-- 按主键查询题目 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM question
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 新增题目（管理端），主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.Question" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO question (questionnaire_id, content, type, options, score_mode, max_score, sort_order)
+        VALUES (#{questionnaireId}, #{content}, #{type}, #{options}, #{scoreMode}, #{maxScore}, #{sortOrder})
+    </insert>
+
+    <!-- 更新题目：仅更新传入的非空字段（管理端编辑） -->
+    <update id="update" parameterType="com.eldercare.core.entity.Question">
+        UPDATE question
+        <set>
+            <if test="content != null">content = #{content},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="options != null">options = #{options},</if>
+            <if test="scoreMode != null">score_mode = #{scoreMode},</if><if test="maxScore != null">max_score = #{maxScore},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 逻辑删除单道题目（管理端） -->
+    <update id="delete">
+        UPDATE question SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 更新题目排序值（管理端拖拽排序） -->
+    <update id="updateSortOrder">
+        UPDATE question SET sort_order = #{sortOrder}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 逻辑删除某问卷下全部题目（删除问卷时级联清理） -->
+    <update id="deleteByQuestionnaireId">
+        UPDATE question SET deleted = 1
+        WHERE questionnaire_id = #{questionnaireId} AND deleted = 0
+    </update>
+
+</mapper>

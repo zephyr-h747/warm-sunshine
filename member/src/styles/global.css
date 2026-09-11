@@ -1,0 +1,346 @@
+/* =========================================================
+   暖阳 · 智慧养老社区 会员端主题
+   设计语言：翡翠绿 × 琥珀橙 · 玻璃拟态 · 适老化大字 · 柔和动效
+   ========================================================= */
+
+:root {
+  /* 品牌色板 */
+  --brand: #00b486;
+  --brand-2: #3ad6a8;
+  --brand-deep: #00926e;
+  --brand-grad: linear-gradient(135deg, #00b486 0%, #3ad6a8 100%);
+  --brand-soft: rgba(0, 180, 134, 0.1);
+
+  --sun: #ff9f2e;
+  --sun-2: #ffca4d;
+  --sun-grad: linear-gradient(135deg, #ff9f2e 0%, #ffca4d 100%);
+  --sun-soft: rgba(255, 159, 46, 0.12);
+
+  --sky: #3f7cff;
+  --sky-grad: linear-gradient(135deg, #3f7cff, #6fa5ff);
+  --violet: #7c5cff;
+  --violet-grad: linear-gradient(135deg, #7c5cff, #a78bfa);
+  --rose: #ff5b7f;
+  --rose-grad: linear-gradient(135deg, #ff5b7f, #ff90a9);
+  --danger: #ff5b4d;
+
+  /* 中性色 */
+  --ink: #1c2b3a;
+  --ink-2: #4f5f6f;
+  --muted: #93a0af;
+  --line: #eef2f6;
+  --bg: #f4f6f9;
+  --card: #ffffff;
+
+  /* 圆角与阴影 */
+  --r-lg: 18px;
+  --r-md: 14px;
+  --r-sm: 10px;
+  --shadow-1: 0 4px 16px rgba(28, 43, 58, 0.05);
+  --shadow-2: 0 12px 32px rgba(28, 43, 58, 0.12);
+
+  /* Vant 主题变量覆盖 */
+  --van-primary-color: #00b486;
+  --van-success-color: #00b486;
+  --van-danger-color: #ff5b4d;
+  --van-warning-color: #ff9f2e;
+  --van-button-border-radius: 14px;
+  --van-button-default-height: 46px;
+  --van-nav-bar-title-font-size: 17px;
+  --van-nav-bar-title-text-color: #1c2b3a;
+  --van-nav-bar-icon-color: #4f5f6f;
+  --van-nav-bar-arrow-size: 20px;
+  --van-cell-font-size: 16px;
+  --van-cell-vertical-padding: 13px;
+  --van-cell-horizontal-padding: 16px;
+  --van-cell-line-height: 1.5;
+  --van-field-label-width: 5.2em;
+  --van-tabs-bottom-bar-color: #00b486;
+  --van-tab-active-text-color: #00926e;
+  --van-tab-text-color: #4f5f6f;
+  --van-tabbar-item-active-color: #00b486;
+  --van-tag-border-radius: 8px;
+  --van-popup-round-radius: 20px;
+  --van-dialog-border-radius: 18px;
+  --van-dialog-confirm-button-text-color: #00926e;
+  --van-toast-background: rgba(28, 43, 58, 0.88);
+  --van-empty-description-color: #93a0af;
+  --van-calendar-confirm-button-height: 46px;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  /* 适老化：基准字号放大 */
+  font-size: 18px;
+  color: var(--ink);
+  background: #e9edf3;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Source Han Sans SC', sans-serif;
+  overscroll-behavior-y: none;
+}
+
+/* 手机画布：手机端占满全屏；PC/宽屏下限宽 480px 居中呈现。
+   （ignore- 前缀跳过 px→rem 转换，480 为真实像素，与 index.html 根字号封顶值一致） */
+#app {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+#app.ignore-app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  box-shadow: 0 0 48px rgba(28, 43, 58, 0.1);
+}
+
+/* 页面骨架：保证底部 TabBar 贴底 */
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.shell > .page-body {
+  flex: 1;
+}
+
+/* ---------- 通用卡片 ---------- */
+.app-card {
+  background: var(--card);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+  padding: 16px;
+  margin: 0 14px 14px;
+}
+
+/* ---------- 分区标题 ---------- */
+.sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20px 16px 10px;
+}
+
+.sec-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sec-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--brand-grad);
+}
+
+.sec-more {
+  color: var(--muted);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+/* ---------- 交互反馈 ---------- */
+.press {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.press:active {
+  transform: scale(0.96);
+}
+
+/* ---------- 渐变文字 ---------- */
+.grad-text {
+  background: var(--brand-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- 动画 ---------- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* backwards：结束后不保留动画样式，避免残留 transform 使 fixed 弹层（日历等）高度塌陷 */
+.fade-up {
+  animation: fade-up 0.5s ease backwards;
+}
+
+.d1 { animation-delay: 0.06s; }
+.d2 { animation-delay: 0.12s; }
+.d3 { animation-delay: 0.18s; }
+.d4 { animation-delay: 0.24s; }
+.d5 { animation-delay: 0.3s; }
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.08); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- 极光背景（认证页） ---------- */
+.aurora {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 70% at 85% -10%, rgba(58, 214, 168, 0.35), transparent 60%),
+    radial-gradient(100% 60% at -10% 20%, rgba(255, 201, 77, 0.3), transparent 55%),
+    radial-gradient(90% 60% at 110% 80%, rgba(63, 124, 255, 0.16), transparent 60%),
+    linear-gradient(180deg, #f0fbf7 0%, #f5f7fb 100%);
+}
+
+.aurora::before,
+.aurora::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(46px);
+  animation: float-y 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.aurora::before {
+  width: 240px;
+  height: 240px;
+  background: rgba(0, 180, 134, 0.22);
+  top: -60px;
+  right: -60px;
+}
+
+.aurora::after {
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 159, 46, 0.2);
+  bottom: -40px;
+  left: -50px;
+  animation-delay: -3.5s;
+}
+
+/* ---------- 路由切换过渡 ---------- */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* ---------- 会员等级徽章 ---------- */
+.level-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: #fff;
+}
+
+.level-chip.NORMAL { background: linear-gradient(135deg, #8a97a8, #b3bdca); }
+.level-chip.SILVER { background: linear-gradient(135deg, #9aa8bb, #cdd6e2); color: #4a5568; }
+.level-chip.GOLD { background: var(--sun-grad); color: #8a5300; }
+.level-chip.PLATINUM { background: linear-gradient(135deg, #5e7ce2, #8ea6f0); }
+.level-chip.DIAMOND { background: linear-gradient(135deg, #38c6f4, #7ee8ff); color: #0a4a63; }
+
+/* ---------- 状态点 ---------- */
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* ---------- 细滚动条（弹层内） ---------- */
+.thin-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(147, 160, 175, 0.4);
+  border-radius: 2px;
+}
+
+/* ---------- Vant 细节微调 ---------- */
+.van-nav-bar {
+  background: transparent;
+}
+
+.van-nav-bar .van-icon {
+  font-weight: 600;
+}
+
+.van-dialog {
+  box-shadow: var(--shadow-2);
+}
+
+.van-toast {
+  font-size: 15px;
+}
+
+/* ---------- PC / 宽屏适配 ----------
+   画布封顶 480px 居中（根字号脚本见 index.html，画布限宽见 #app.ignore-app）。
+   Vant 弹层 teleport 到 body，position:fixed 相对真实视口定位，
+   底部/顶部弹层 width:100% 会铺满整屏，这里约束回画布宽度并水平居中；
+   用 left + margin 定位而非 transform，避免与弹层进出动画的 transform 冲突 */
+@media (min-width: 481px) {
+  html {
+    background: linear-gradient(160deg, #e7f4ef 0%, #eef1f6 45%, #f9f3e9 100%);
+  }
+
+  body {
+    background: transparent;
+  }
+
+  .van-popup--bottom,
+  .van-popup--top,
+  .van-notify {
+    left: 50%;
+    right: auto;
+    width: 10rem; /* 480px：与画布同宽（PC 下根字号 48px，10rem = 480px） */
+    margin-left: -5rem;
+  }
+
+  .van-toast {
+    max-width: 7rem; /* 336px，避免长文案在宽屏上过宽 */
+  }
+}

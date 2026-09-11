@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.CommunityActivityMapper">
+
+    <!-- 社区活动表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.CommunityActivity">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="cover_url" property="coverUrl"/>
+        <result column="content" property="content"/>
+        <result column="registration_start" property="registrationStart"/>
+        <result column="registration_end" property="registrationEnd"/>
+        <result column="activity_start" property="activityStart"/>
+        <result column="activity_end" property="activityEnd"/>
+        <result column="max_participants" property="maxParticipants"/>
+        <result column="current_participants" property="currentParticipants"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, title, cover_url, content, registration_start, registration_end,
+        activity_start, activity_end, max_participants, current_participants,
+        status, create_time, update_time, deleted
+    </sql>
+
+    <!-- 活动列表：status 为空查全部，未结束的活动排在前（FIELD 自定义排序），分页由 PageHelper 处理 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM community_activity
+        WHERE deleted = 0
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY FIELD(status, 'REGISTRATING', 'IN_PROGRESS', 'DRAFT', 'ENDED', 'CANCELED'), activity_start ASC
+    </select>
+
+    <!-- 按主键查询活动 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM community_activity
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 原子加人数：仅当未满员（current_participants 小于 max_participants）才 +1，返回影响行数判断报名是否成功 -->
+    <update id="incrementParticipants">
+        UPDATE community_activity
+        SET current_participants = current_participants + 1
+        WHERE id = #{id} AND deleted = 0 AND current_participants &lt; max_participants
+    </update>
+
+    <!-- 原子减人数：仅当 current_participants 大于 0 才 -1（取消报名释放名额） -->
+    <update id="decrementParticipants">
+        UPDATE community_activity
+        SET current_participants = current_participants - 1
+        WHERE id = #{id} AND deleted = 0 AND current_participants &gt; 0
+    </update>
+
+    <!-- 新建活动：初始参与人数为 0，主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.CommunityActivity" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO community_activity (title, cover_url, content, registration_start, registration_end,
+                                        activity_start, activity_end, max_participants, current_participants, status)
+        VALUES (#{title}, #{coverUrl}, #{content}, #{registrationStart}, #{registrationEnd},
+                #{activityStart}, #{activityEnd}, #{maxParticipants}, 0, #{status})
+    </insert>
+
+    <!-- 更新活动：仅更新传入的非空字段（管理端编辑） -->
+    <update id="update" parameterType="com.eldercare.core.entity.CommunityActivity">
+        UPDATE community_activity
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="coverUrl != null">cover_url = #{coverUrl},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="registrationStart != null">registration_start = #{registrationStart},</if>
+            <if test="registrationEnd != null">registration_end = #{registrationEnd},</if>
+            <if test="activityStart != null">activity_start = #{activityStart},</if>
+            <if test="activityEnd != null">activity_end = #{activityEnd},</if>
+            <if test="maxParticipants != null">max_participants = #{maxParticipants},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 逻辑删除活动（管理端） -->
+    <update id="delete">
+        UPDATE community_activity SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>

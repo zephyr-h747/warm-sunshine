@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.UserMapper">
+
+    <!-- 用户表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.User">
+        <id column="id" property="id"/>
+        <result column="phone" property="phone"/>
+        <result column="password" property="password"/>
+        <result column="real_name" property="realName"/>
+        <result column="gender" property="gender"/>
+        <result column="birth_date" property="birthDate"/>
+        <result column="height" property="height"/>
+        <result column="avatar" property="avatar"/>
+        <result column="emergency_contact" property="emergencyContact"/>
+        <result column="member_level" property="memberLevel"/>
+        <result column="points" property="points"/>
+        <result column="status" property="status"/>
+        <result column="role" property="role"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, phone, password, real_name, gender, birth_date, height, avatar, emergency_contact,
+        member_level, points, status, role, create_time, update_time, deleted
+    </sql>
+
+    <!-- 按手机号查询用户：登录、注册查重使用 -->
+    <select id="selectByPhone" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user
+        WHERE phone = #{phone} AND deleted = 0
+    </select>
+
+    <!-- 按主键查询用户 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 新增用户（注册），主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user (phone, password, real_name, gender, birth_date, height, avatar,
+                          emergency_contact, member_level, points, status, role)
+        VALUES (#{phone}, #{password}, #{realName}, #{gender}, #{birthDate}, #{height}, #{avatar},
+                #{emergencyContact}, #{memberLevel}, #{points}, #{status}, #{role})
+    </insert>
+
+    <!-- 修改密码：找回密码、管理端重置密码使用 -->
+    <update id="updatePassword">
+        UPDATE user SET password = #{password}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 原子加减积分：points = points + delta（delta 可正可负，签到加分/管理端调整） -->
+    <update id="updatePoints">
+        UPDATE user SET points = points + #{delta}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 原子扣积分：仅当 points 大于等于 cost 才生效，通过影响行数判断余额是否充足（套餐预约抵扣） -->
+    <update id="deductPoints">
+        UPDATE user SET points = points - #{cost}
+        WHERE id = #{id} AND points >= #{cost} AND deleted = 0
+    </update>
+
+    <!-- 更新账号状态：ENABLED 启用/DISABLED 禁用（管理端） -->
+    <update id="updateStatus">
+        UPDATE user SET status = #{status}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 更新会员等级（管理端调整） -->
+    <update id="updateMemberLevel">
+        UPDATE user SET member_level = #{memberLevel}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 更新个人资料：仅更新传入的非空字段（会员端修改个人信息） -->
+    <update id="updateProfile" parameterType="com.eldercare.core.entity.User">
+        UPDATE user
+        <set>
+            <if test="realName != null">real_name = #{realName},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="birthDate != null">birth_date = #{birthDate},</if>
+            <if test="height != null">height = #{height},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="emergencyContact != null">emergency_contact = #{emergencyContact},</if>
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 管理端条件筛选：phone/realName 模糊匹配，status/memberLevel 精确匹配，分页由 PageHelper 处理 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user
+        WHERE deleted = 0
+        <if test="phone != null and phone != ''">AND phone LIKE CONCAT('%', #{phone}, '%')</if>
+        <if test="realName != null and realName != ''">AND real_name LIKE CONCAT('%', #{realName}, '%')</if>
+        <if test="status != null and status != ''">AND status = #{status}</if>
+        <if test="memberLevel != null and memberLevel != ''">AND member_level = #{memberLevel}</if>
+        ORDER BY id DESC
+    </select>
+
+    <!-- 会员总数统计（仅统计 MEMBER 角色，仪表盘使用） -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM user WHERE deleted = 0 AND role = 'MEMBER'
+    </select>
+
+    <!-- 今日新增会员数统计（仪表盘使用） -->
+    <select id="countTodayNew" resultType="long">
+        SELECT COUNT(*) FROM user
+        WHERE deleted = 0 AND role = 'MEMBER' AND DATE(create_time) = CURDATE()
+    </select>
+
+    <!-- 定时任务：统计注册时间早于 cutoff 且积分大于 0 的用户数（积分过期检查） -->
+    <select id="countExpiredPointsUsers" resultType="int">
+        SELECT COUNT(*) FROM user
+        WHERE deleted = 0 AND role = 'MEMBER' AND create_time &lt; #{cutoff} AND points &gt; 0
+    </select>
+
+    <!-- 定时任务：将注册时间早于 cutoff 的会员积分清零，返回影响行数 -->
+    <update id="clearExpiredPoints">
+        UPDATE user SET points = 0
+        WHERE deleted = 0 AND role = 'MEMBER' AND create_time &lt; #{cutoff} AND points &gt; 0
+    </update>
+
+</mapper>

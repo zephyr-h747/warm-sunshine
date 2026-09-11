@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.RefreshTokenMapper">
+
+    <!-- 刷新令牌表字段映射（无逻辑删除字段，登出时物理删除） -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.RefreshToken">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="token" property="token"/>
+        <result column="expire_time" property="expireTime"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 保存刷新令牌（登录时签发），主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.RefreshToken" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO refresh_token (user_id, token, expire_time)
+        VALUES (#{userId}, #{token}, #{expireTime})
+    </insert>
+
+    <!-- 按 token 查询刷新令牌（刷新接口校验库记录） -->
+    <select id="selectByToken" resultMap="BaseResultMap">
+        SELECT id, user_id, token, expire_time, create_time
+        FROM refresh_token
+        WHERE token = #{token}
+    </select>
+
+    <!-- 按用户查询全部刷新令牌 -->
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT id, user_id, token, expire_time, create_time
+        FROM refresh_token
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 登出时物理删除指定刷新令牌 -->
+    <delete id="deleteByToken">
+        DELETE FROM refresh_token WHERE token = #{token}
+    </delete>
+
+    <!-- 物理删除某用户全部刷新令牌（找回密码/强制下线时使用） -->
+    <delete id="deleteByUserId">
+        DELETE FROM refresh_token WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 定时任务：物理清理已过期的刷新令牌 -->
+    <delete id="deleteExpired">
+        DELETE FROM refresh_token WHERE expire_time &lt; NOW()
+    </delete>
+
+</mapper>

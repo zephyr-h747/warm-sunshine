@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.AppointmentSlotMapper">
+
+    <!-- 预约时段表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.AppointmentSlot">
+        <id column="id" property="id"/>
+        <result column="package_id" property="packageId"/>
+        <result column="appoint_date" property="appointDate"/>
+        <result column="time_range" property="timeRange"/>
+        <result column="max_count" property="maxCount"/>
+        <result column="current_count" property="currentCount"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, package_id, appoint_date, time_range, max_count, current_count, status, create_time, update_time, deleted
+    </sql>
+
+    <!-- 会员端：查询某套餐某日期的可约时段（按时段升序） -->
+    <select id="selectByPackageAndDate" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointment_slot
+        WHERE package_id = #{packageId} AND appoint_date = #{date} AND deleted = 0
+        ORDER BY time_range ASC
+    </select>
+
+    <!-- 按主键查询时段 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointment_slot
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 行锁查询时段（FOR UPDATE，创建预约事务中锁定名额，防止并发超卖） -->
+    <select id="selectByIdForUpdate" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointment_slot
+        WHERE id = #{id} AND deleted = 0
+        FOR UPDATE
+    </select>
+
+    <!-- 原子加名额：仅当未满员（current_count 小于 max_count）才 +1，返回影响行数判断是否成功 -->
+    <update id="incrementCurrentCount">
+        UPDATE appointment_slot
+        SET current_count = current_count + 1
+        WHERE id = #{id} AND current_count &lt; max_count AND deleted = 0
+    </update>
+
+    <!-- 原子减名额：仅当 current_count 大于 0 才 -1（取消预约释放名额） -->
+    <update id="decrementCurrentCount">
+        UPDATE appointment_slot
+        SET current_count = current_count - 1
+        WHERE id = #{id} AND current_count &gt; 0 AND deleted = 0
+    </update>
+
+    <!-- 管理端：某套餐的全部时段（按日期、时段升序） -->
+    <select id="selectByPackage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM appointment_slot
+        WHERE package_id = #{packageId} AND deleted = 0
+        ORDER BY appoint_date ASC, time_range ASC
+    </select>
+
+    <!-- 管理端：批量生成时段，初始 current_count=0、状态 AVAILABLE -->
+    <insert id="batchInsert" parameterType="list">
+        INSERT INTO appointment_slot (package_id, appoint_date, time_range, max_count, current_count, status)
+        VALUES
+        <foreach collection="list" item="slot" separator=",">
+            (#{slot.packageId}, #{slot.appointDate}, #{slot.timeRange}, #{slot.maxCount}, 0, 'AVAILABLE')
+        </foreach>
+    </insert>
+
+</mapper>

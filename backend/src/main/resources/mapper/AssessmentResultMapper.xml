@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 双端共用 Mapper（用户端 + 管理端共用），SQL 方法见对应 Java 接口 -->
+<mapper namespace="com.eldercare.core.mapper.AssessmentResultMapper">
+
+    <!-- 评测结果表字段映射；deleted：0 未删除/1 已删除 -->
+    <resultMap id="BaseResultMap" type="com.eldercare.core.entity.AssessmentResult">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="questionnaire_id" property="questionnaireId"/>
+        <result column="answers" property="answers"/>
+        <result column="ai_score" property="aiScore"/>
+        <result column="ai_suggestion" property="aiSuggestion"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询列 -->
+    <sql id="Base_Column_List">
+        id, user_id, questionnaire_id, answers, ai_score, ai_suggestion, create_time, update_time, deleted
+    </sql>
+
+    <!-- 保存评测结果（含答案快照、AI 评分与建议），主键回填 -->
+    <insert id="insert" parameterType="com.eldercare.core.entity.AssessmentResult" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO assessment_result (user_id, questionnaire_id, answers, ai_score, ai_suggestion)
+        VALUES (#{userId}, #{questionnaireId}, #{answers}, #{aiScore}, #{aiSuggestion})
+    </insert>
+
+    <!-- 会员端：我的历史评测列表（按提交时间倒序，分页由 PageHelper 处理） -->
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM assessment_result
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY id DESC
+    </select>
+
+    <!-- 按主键查询评测结果（评测详情页） -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM assessment_result
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+</mapper>
